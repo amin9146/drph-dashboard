@@ -35,7 +35,6 @@
       padding: 20px;
       margin-bottom: 20px;
       box-shadow: 0 5px 10px rgba(0,0,0,0.05);
-      text-align: center;
     }
     h2 {
       color: #d63384;
@@ -43,7 +42,7 @@
     }
     input[type="text"], input[type="datetime-local"] {
       padding: 10px;
-      width: calc(100% - 120px);
+      width: calc(100% - 110px);
       margin-bottom: 10px;
       border-radius: 8px;
       border: 1px solid #ccc;
@@ -62,24 +61,20 @@
     }
     ul {
       padding-left: 20px;
-      text-align: left;
     }
-    .countdown-display {
+    .countdown {
       display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin: 15px 0;
-      font-size: 1.8rem;
-      font-weight: bold;
+      justify-content: space-around;
+      font-size: 2rem;
+      margin: 20px 0;
     }
-    .countdown-display div {
+    .countdown div {
       display: flex;
       flex-direction: column;
       align-items: center;
     }
-    .countdown-display small {
-      font-size: 0.8rem;
-      font-weight: normal;
+    .countdown span {
+      font-weight: bold;
     }
   </style>
 </head>
@@ -90,8 +85,8 @@
   </header>
   <div class="container">
     <div class="card">
-      <h2>🗓️ Countdown to Final Exam</h2>
-      <div class="countdown-display">
+      <h2>📅 Countdown to Final Exam</h2>
+      <div class="countdown">
         <div><span id="days">0</span><small>days</small></div>
         <div><span id="hours">0</span><small>hours</small></div>
         <div><span id="minutes">0</span><small>minutes</small></div>
@@ -99,6 +94,14 @@
       </div>
       <input type="datetime-local" id="examDate">
       <button onclick="setExamDate()">Start Countdown</button>
+    </div>
+
+    <div class="card">
+      <h2>📄 Revision Documents</h2>
+      <ul id="revisionList"></ul>
+      <input type="text" id="docTitle" placeholder="Document Title">
+      <input type="text" id="docUrl" placeholder="Document URL">
+      <button onclick="addDocument()">Add Document</button>
     </div>
 
     <div class="card">
@@ -137,20 +140,18 @@
       countdownInterval = setInterval(() => {
         const now = new Date().getTime();
         const diff = date - now;
-
         if (diff <= 0) {
           clearInterval(countdownInterval);
-          ["days", "hours", "minutes", "seconds"].forEach(id => {
-            document.getElementById(id).textContent = 0;
-          });
+          document.getElementById("days").textContent = 0;
+          document.getElementById("hours").textContent = 0;
+          document.getElementById("minutes").textContent = 0;
+          document.getElementById("seconds").textContent = 0;
           return;
         }
-
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
         document.getElementById("days").textContent = days;
         document.getElementById("hours").textContent = hours;
         document.getElementById("minutes").textContent = minutes;
@@ -193,6 +194,32 @@
         list.appendChild(li);
       });
     });
+
+    function addDocument() {
+      const title = document.getElementById("docTitle").value;
+      const url = document.getElementById("docUrl").value;
+      if (title && url) {
+        db.collection("documents").add({ title, url });
+        document.getElementById("docTitle").value = "";
+        document.getElementById("docUrl").value = "";
+      }
+    }
+
+    db.collection("documents").onSnapshot(snapshot => {
+      const list = document.getElementById("revisionList");
+      list.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = data.url;
+        link.textContent = data.title;
+        link.target = "_blank";
+        li.appendChild(link);
+        list.appendChild(li);
+      });
+    });
   </script>
 </body>
 </html>
+
