@@ -63,10 +63,10 @@
       padding-left: 20px;
     }
 
+    /* Countdown styling */
     .countdown-card {
       text-align: center;
     }
-
     .countdown-display {
       display: flex;
       justify-content: space-around;
@@ -75,19 +75,16 @@
       font-weight: bold;
       color: #111;
     }
-
     .countdown-display div {
       display: flex;
       flex-direction: column;
       align-items: center;
     }
-
     .countdown-display small {
       font-size: 1rem;
       color: #555;
       margin-top: 5px;
     }
-
     .input-group {
       margin-top: 20px;
       display: flex;
@@ -95,14 +92,12 @@
       gap: 10px;
       flex-wrap: wrap;
     }
-
     .input-group input[type="datetime-local"] {
       padding: 12px;
       font-size: 1rem;
       border-radius: 8px;
       border: 1px solid #ccc;
     }
-
     .input-group button {
       padding: 12px 18px;
       background-color: #2563eb;
@@ -112,7 +107,6 @@
       font-weight: bold;
       cursor: pointer;
     }
-
     .input-group button:hover {
       background-color: #1d4ed8;
     }
@@ -177,34 +171,43 @@
 
     let countdownInterval;
 
-    function setExamDate() {
+    function startCountdown(date) {
       clearInterval(countdownInterval);
-      const date = new Date(document.getElementById("examDate").value).getTime();
-
       countdownInterval = setInterval(() => {
         const now = new Date().getTime();
         const diff = date - now;
-
         if (diff <= 0) {
           clearInterval(countdownInterval);
-          document.getElementById("days").textContent = "00";
-          document.getElementById("hours").textContent = "00";
-          document.getElementById("minutes").textContent = "00";
-          document.getElementById("seconds").textContent = "00";
+          ["days", "hours", "minutes", "seconds"].forEach(id => {
+            document.getElementById(id).textContent = "00";
+          });
           return;
         }
-
         const days = String(Math.floor(diff / (1000 * 60 * 60 * 24))).padStart(2, '0');
         const hours = String(Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0');
         const minutes = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
         const seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
-
         document.getElementById("days").textContent = days;
         document.getElementById("hours").textContent = hours;
         document.getElementById("minutes").textContent = minutes;
         document.getElementById("seconds").textContent = seconds;
       }, 1000);
     }
+
+    function setExamDate() {
+      const date = new Date(document.getElementById("examDate").value).getTime();
+      db.collection("settings").doc("examDate").set({ timestamp: date });
+      startCountdown(date);
+    }
+
+    // Load exam date on startup
+    db.collection("settings").doc("examDate").get().then(doc => {
+      if (doc.exists) {
+        const date = doc.data().timestamp;
+        document.getElementById("examDate").value = new Date(date).toISOString().slice(0, 16);
+        startCountdown(date);
+      }
+    });
 
     function addAnnouncement() {
       const text = document.getElementById("newAnnouncement").value;
