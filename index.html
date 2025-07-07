@@ -35,6 +35,7 @@
       padding: 20px;
       margin-bottom: 20px;
       box-shadow: 0 5px 10px rgba(0,0,0,0.05);
+      text-align: center;
     }
     h2 {
       color: #d63384;
@@ -42,7 +43,7 @@
     }
     input[type="text"], input[type="datetime-local"] {
       padding: 10px;
-      width: calc(100% - 110px);
+      width: calc(100% - 120px);
       margin-bottom: 10px;
       border-radius: 8px;
       border: 1px solid #ccc;
@@ -61,6 +62,24 @@
     }
     ul {
       padding-left: 20px;
+      text-align: left;
+    }
+    .countdown-display {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 15px 0;
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+    .countdown-display div {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .countdown-display small {
+      font-size: 0.8rem;
+      font-weight: normal;
     }
   </style>
 </head>
@@ -71,10 +90,15 @@
   </header>
   <div class="container">
     <div class="card">
-      <h2>📅 Countdown to Final Exam</h2>
+      <h2>🗓️ Countdown to Final Exam</h2>
+      <div class="countdown-display">
+        <div><span id="days">0</span><small>days</small></div>
+        <div><span id="hours">0</span><small>hours</small></div>
+        <div><span id="minutes">0</span><small>minutes</small></div>
+        <div><span id="seconds">0</span><small>seconds</small></div>
+      </div>
       <input type="datetime-local" id="examDate">
       <button onclick="setExamDate()">Start Countdown</button>
-      <p id="countdown"></p>
     </div>
 
     <div class="card">
@@ -94,27 +118,43 @@
 
   <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyDaBNZj27rBTJtEup9IVCivT3vxp_RA-U8",
-  authDomain: "drph1-exam-dashboard.firebaseapp.com",
-  projectId: "drph1-exam-dashboard",
-  storageBucket: "drph1-exam-dashboard.firebasestorage.app",
-  messagingSenderId: "77410464360",
-  appId: "1:77410464360:web:c322b249eb1975bcc5c1dd",
-  measurementId: "G-VYMJNEERVZ"
-};
+      apiKey: "AIzaSyDaBNZj27rBTJtEup9IVCivT3vxp_RA-U8",
+      authDomain: "drph1-exam-dashboard.firebaseapp.com",
+      projectId: "drph1-exam-dashboard",
+      storageBucket: "drph1-exam-dashboard.firebasestorage.app",
+      messagingSenderId: "77410464360",
+      appId: "1:77410464360:web:c322b249eb1975bcc5c1dd",
+      measurementId: "G-VYMJNEERVZ"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    let countdownInterval;
     function setExamDate() {
+      clearInterval(countdownInterval);
       const date = new Date(document.getElementById("examDate").value).getTime();
-      setInterval(() => {
+      countdownInterval = setInterval(() => {
         const now = new Date().getTime();
         const diff = date - now;
+
+        if (diff <= 0) {
+          clearInterval(countdownInterval);
+          ["days", "hours", "minutes", "seconds"].forEach(id => {
+            document.getElementById(id).textContent = 0;
+          });
+          return;
+        }
+
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        document.getElementById("countdown").textContent = `Exam in ${days}d ${hours}h ${minutes}m`;
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        document.getElementById("days").textContent = days;
+        document.getElementById("hours").textContent = hours;
+        document.getElementById("minutes").textContent = minutes;
+        document.getElementById("seconds").textContent = seconds;
       }, 1000);
     }
 
