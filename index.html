@@ -62,20 +62,6 @@
     ul {
       padding-left: 20px;
     }
-    .countdown {
-      display: flex;
-      justify-content: space-around;
-      font-size: 2rem;
-      margin: 20px 0;
-    }
-    .countdown div {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .countdown span {
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
@@ -86,22 +72,9 @@
   <div class="container">
     <div class="card">
       <h2>📅 Countdown to Final Exam</h2>
-      <div class="countdown">
-        <div><span id="days">0</span><small>days</small></div>
-        <div><span id="hours">0</span><small>hours</small></div>
-        <div><span id="minutes">0</span><small>minutes</small></div>
-        <div><span id="seconds">0</span><small>seconds</small></div>
-      </div>
+      <div id="countdownPanel" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 15px;"><span id="days">0</span>d <span id="hours">0</span>h <span id="minutes">0</span>m <span id="seconds">0</span>s</div>
       <input type="datetime-local" id="examDate">
       <button onclick="setExamDate()">Start Countdown</button>
-    </div>
-
-    <div class="card">
-      <h2>📄 Revision Documents</h2>
-      <ul id="revisionList"></ul>
-      <input type="text" id="docTitle" placeholder="Document Title">
-      <input type="text" id="docUrl" placeholder="Document URL">
-      <button onclick="addDocument()">Add Document</button>
     </div>
 
     <div class="card">
@@ -116,6 +89,14 @@
       <ul id="todoList"></ul>
       <input type="text" id="newTodo" placeholder="New task...">
       <button onclick="addTodo()">Add</button>
+    </div>
+
+    <div class="card">
+      <h2>📄 Revision Documents</h2>
+      <ul id="revisionList"></ul>
+      <input type="text" id="docTitle" placeholder="Document Title">
+      <input type="text" id="docURL" placeholder="Document URL">
+      <button onclick="addRevisionDoc()">Add Document</button>
     </div>
   </div>
 
@@ -133,25 +114,17 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let countdownInterval;
     function setExamDate() {
-      clearInterval(countdownInterval);
       const date = new Date(document.getElementById("examDate").value).getTime();
-      countdownInterval = setInterval(() => {
+      setInterval(() => {
         const now = new Date().getTime();
         const diff = date - now;
-        if (diff <= 0) {
-          clearInterval(countdownInterval);
-          document.getElementById("days").textContent = 0;
-          document.getElementById("hours").textContent = 0;
-          document.getElementById("minutes").textContent = 0;
-          document.getElementById("seconds").textContent = 0;
-          return;
-        }
+
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
         document.getElementById("days").textContent = days;
         document.getElementById("hours").textContent = hours;
         document.getElementById("minutes").textContent = minutes;
@@ -195,28 +168,30 @@
       });
     });
 
-    function addDocument() {
+    function addRevisionDoc() {
       const title = document.getElementById("docTitle").value;
-      const url = document.getElementById("docUrl").value;
+      const url = document.getElementById("docURL").value;
       if (title && url) {
-        db.collection("documents").add({ title, url });
+        db.collection("revisions").add({ title, url });
         document.getElementById("docTitle").value = "";
-        document.getElementById("docUrl").value = "";
+        document.getElementById("docURL").value = "";
       }
     }
 
-    db.collection("documents").onSnapshot(snapshot => {
+    db.collection("revisions").onSnapshot(snapshot => {
       const list = document.getElementById("revisionList");
       list.innerHTML = "";
       snapshot.forEach(doc => {
         const data = doc.data();
-        const li = document.createElement("li");
-        const link = document.createElement("a");
-        link.href = data.url;
-        link.textContent = data.title;
-        link.target = "_blank";
-        li.appendChild(link);
-        list.appendChild(li);
+        if (data.title && data.url) {
+          const li = document.createElement("li");
+          const a = document.createElement("a");
+          a.textContent = data.title;
+          a.href = data.url;
+          a.target = "_blank";
+          li.appendChild(a);
+          list.appendChild(li);
+        }
       });
     });
   </script>
