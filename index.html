@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DRPH Class Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+      margin: 0;
+      background-image: url('backgrounddashboard.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-position: center;
+      color: #333;
+    }
+    header {
+      text-align: center;
+      padding: 30px;
+      background-color: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.05);
+    }
+    h2 {
+      color: #d63384;
+      margin-top: 0;
+    }
+    input[type="text"], input[type="datetime-local"] {
+      padding: 10px;
+      width: calc(100% - 110px);
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #ffb6c1;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #ff6f91;
+      color: white;
+    }
+    ul {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📚 DRPH Class Dashboard</h1>
+    <p>Stay organized with your tasks, announcements, and final exam countdown.</p>
+  </header>
+  <div class="container">
+    <div class="card">
+      <h2>📅 Countdown to Final Exam</h2>
+      <input type="datetime-local" id="examDate">
+      <button onclick="setExamDate()">Start Countdown</button>
+      <p id="countdown"></p>
+    </div>
+
+    <div class="card">
+      <h2>📢 Announcements</h2>
+      <ul id="announcementList"></ul>
+      <input type="text" id="newAnnouncement" placeholder="Enter announcement...">
+      <button onclick="addAnnouncement()">Post</button>
+    </div>
+
+    <div class="card">
+      <h2>✅ To-Do List</h2>
+      <ul id="todoList"></ul>
+      <input type="text" id="newTodo" placeholder="New task...">
+      <button onclick="addTodo()">Add</button>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+  apiKey: "AIzaSyDaBNZj27rBTJtEup9IVCivT3vxp_RA-U8",
+  authDomain: "drph1-exam-dashboard.firebaseapp.com",
+  projectId: "drph1-exam-dashboard",
+  storageBucket: "drph1-exam-dashboard.firebasestorage.app",
+  messagingSenderId: "77410464360",
+  appId: "1:77410464360:web:c322b249eb1975bcc5c1dd",
+  measurementId: "G-VYMJNEERVZ"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function setExamDate() {
+      const date = new Date(document.getElementById("examDate").value).getTime();
+      setInterval(() => {
+        const now = new Date().getTime();
+        const diff = date - now;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        document.getElementById("countdown").textContent = `Exam in ${days}d ${hours}h ${minutes}m`;
+      }, 1000);
+    }
+
+    function addAnnouncement() {
+      const text = document.getElementById("newAnnouncement").value;
+      if (text) {
+        db.collection("announcements").add({ text });
+        document.getElementById("newAnnouncement").value = "";
+      }
+    }
+
+    db.collection("announcements").onSnapshot(snapshot => {
+      const list = document.getElementById("announcementList");
+      list.innerHTML = "";
+      snapshot.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = doc.data().text;
+        list.appendChild(li);
+      });
+    });
+
+    function addTodo() {
+      const text = document.getElementById("newTodo").value;
+      if (text) {
+        db.collection("todos").add({ text });
+        document.getElementById("newTodo").value = "";
+      }
+    }
+
+    db.collection("todos").onSnapshot(snapshot => {
+      const list = document.getElementById("todoList");
+      list.innerHTML = "";
+      snapshot.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = doc.data().text;
+        list.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
