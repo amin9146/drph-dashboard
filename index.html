@@ -62,11 +62,22 @@
     ul {
       padding-left: 20px;
     }
+    ul li button {
+      margin-left: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    ul li button:hover {
+      color: red;
+      transform: scale(1.1);
+    }
 
     /* Countdown styling */
     .countdown-card {
       text-align: center;
     }
+
     .countdown-display {
       display: flex;
       justify-content: space-around;
@@ -75,16 +86,19 @@
       font-weight: bold;
       color: #111;
     }
+
     .countdown-display div {
       display: flex;
       flex-direction: column;
       align-items: center;
     }
+
     .countdown-display small {
       font-size: 1rem;
       color: #555;
       margin-top: 5px;
     }
+
     .input-group {
       margin-top: 20px;
       display: flex;
@@ -92,12 +106,14 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+
     .input-group input[type="datetime-local"] {
       padding: 12px;
       font-size: 1rem;
       border-radius: 8px;
       border: 1px solid #ccc;
     }
+
     .input-group button {
       padding: 12px 18px;
       background-color: #2563eb;
@@ -107,6 +123,7 @@
       font-weight: bold;
       cursor: pointer;
     }
+
     .input-group button:hover {
       background-color: #1d4ed8;
     }
@@ -118,6 +135,8 @@
     <p>Stay organized with your tasks, announcements, and final exam countdown.</p>
   </header>
   <div class="container">
+
+    <!-- COUNTDOWN CARD -->
     <div class="card countdown-card">
       <h2>⏱️ Countdown to Final Exam</h2>
       <div class="countdown-display">
@@ -132,6 +151,7 @@
       </div>
     </div>
 
+    <!-- ANNOUNCEMENT -->
     <div class="card">
       <h2>📢 Announcements</h2>
       <ul id="announcementList"></ul>
@@ -139,6 +159,7 @@
       <button onclick="addAnnouncement()">Post</button>
     </div>
 
+    <!-- TODO LIST -->
     <div class="card">
       <h2>✅ To-Do List</h2>
       <ul id="todoList"></ul>
@@ -146,6 +167,7 @@
       <button onclick="addTodo()">Add</button>
     </div>
 
+    <!-- REVISION DOCS -->
     <div class="card">
       <h2>📄 Revision Documents</h2>
       <ul id="revisionList"></ul>
@@ -169,24 +191,45 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // ===== COUNTDOWN =====
     let countdownInterval;
 
-    function startCountdown(date) {
+    function loadSavedExamDate() {
+      db.collection("settings").doc("examDate").get().then(doc => {
+        if (doc.exists) {
+          document.getElementById("examDate").value = doc.data().datetime;
+          setExamDate();
+        }
+      });
+    }
+
+    function setExamDate() {
       clearInterval(countdownInterval);
+      const input = document.getElementById("examDate");
+      const dateStr = input.value;
+      const date = new Date(dateStr).getTime();
+
+      // Save to Firebase
+      db.collection("settings").doc("examDate").set({ datetime: dateStr });
+
       countdownInterval = setInterval(() => {
         const now = new Date().getTime();
         const diff = date - now;
+
         if (diff <= 0) {
           clearInterval(countdownInterval);
-          ["days", "hours", "minutes", "seconds"].forEach(id => {
-            document.getElementById(id).textContent = "00";
-          });
+          document.getElementById("days").textContent = "00";
+          document.getElementById("hours").textContent = "00";
+          document.getElementById("minutes").textContent = "00";
+          document.getElementById("seconds").textContent = "00";
           return;
         }
+
         const days = String(Math.floor(diff / (1000 * 60 * 60 * 24))).padStart(2, '0');
         const hours = String(Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0');
         const minutes = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
         const seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
+
         document.getElementById("days").textContent = days;
         document.getElementById("hours").textContent = hours;
         document.getElementById("minutes").textContent = minutes;
@@ -194,21 +237,9 @@
       }, 1000);
     }
 
-    function setExamDate() {
-      const date = new Date(document.getElementById("examDate").value).getTime();
-      db.collection("settings").doc("examDate").set({ timestamp: date });
-      startCountdown(date);
-    }
+    loadSavedExamDate();
 
-    // Load exam date on startup
-    db.collection("settings").doc("examDate").get().then(doc => {
-      if (doc.exists) {
-        const date = doc.data().timestamp;
-        document.getElementById("examDate").value = new Date(date).toISOString().slice(0, 16);
-        startCountdown(date);
-      }
-    });
-
+    // ===== ANNOUNCEMENT =====
     function addAnnouncement() {
       const text = document.getElementById("newAnnouncement").value;
       if (text) {
@@ -227,6 +258,7 @@
       });
     });
 
+    // ===== TODO =====
     function addTodo() {
       const text = document.getElementById("newTodo").value;
       if (text) {
@@ -245,6 +277,7 @@
       });
     });
 
+    // ===== REVISION DOCS =====
     function addRevisionDoc() {
       const title = document.getElementById("docTitle").value;
       const url = document.getElementById("docURL").value;
@@ -262,11 +295,22 @@
         const data = doc.data();
         if (data.title && data.url) {
           const li = document.createElement("li");
+
           const a = document.createElement("a");
           a.textContent = data.title;
           a.href = data.url;
           a.target = "_blank";
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "🗑️";
+          delBtn.onclick = () => {
+            if (confirm(`Delete "${data.title}"?`)) {
+              db.collection("revisions").doc(doc.id).delete();
+            }
+          };
+
           li.appendChild(a);
+          li.appendChild(delBtn);
           list.appendChild(li);
         }
       });
